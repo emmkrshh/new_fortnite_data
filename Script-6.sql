@@ -244,3 +244,46 @@ group by
 order by 
   total_claim_amount desc;
 
+-- finding the highest claim amount by state 
+select 
+    p.policy_state,
+    f.policy_number,
+    f.total_claim_amount,
+    max(f.total_claim_amount) over (partition by p.policy_state) as max_claim_in_state
+from 
+    fraud_insurance_claims f
+join 
+    policy p on f.policy_number = p.policy_number;
+
+-- using "like" in place of regex - SQLite (database server) doesnt support regex in queries 
+-- finding rows where the insureds occupation is "sales"
+
+select
+    policy_number, 
+    insured_occupation
+from 
+    policy
+where 
+    lower(insured_occupation) like '%sales%';
+
+
+-- count of policies vs claims by state 
+
+select
+  state,
+  sum(case when source = 'policy' then 1 else 0 end) as policy_count,
+  sum(case when source = 'claim' then 1 else 0 end) as claim_count
+from (
+  select
+    policy_state as state,
+    'policy' as source
+  from policy
+  union all
+  select
+    incident_state as state,
+    'claim' as source
+  from fraud_insurance_claims
+)
+group by state
+order by state;
+
